@@ -114,7 +114,8 @@ ADD oci8.ini /etc/php/versionPHP/mods-available/
 RUN useradd -g 0 -m deployer && echo "deployer:deployer" | chpasswd && adduser deployer sudo
 RUN echo "deployer ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-RUN sudo chown 1000:33 -R /var/www/html
+RUN chown deployer:www-data /var/www/html -R && \
+	chmod 775 /var/www/html -R
 
 USER deployer
 
