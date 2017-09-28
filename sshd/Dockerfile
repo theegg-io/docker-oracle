@@ -8,7 +8,7 @@ RUN mkdir /var/run/sshd
 RUN echo 'root:screencast' | chpasswd
 
 # Set user deployer
-RUN useradd -g 0 -m deployer && echo "deployer:deployer" | chpasswd && adduser deployer sudo
+RUN useradd -g 33 -m deployer && echo "deployer:deployer" | chpasswd && adduser deployer sudo
 RUN echo "deployer ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 WORKDIR /home/deployer
@@ -20,7 +20,6 @@ RUN mkdir .ssh && \
     touch .ssh/authorized_keys  && \
     chmod 600 .ssh/authorized_keys
 
-#RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 COPY authorized_keys /home/deployer/.ssh/authorized_keys
 
 USER root

@@ -19,7 +19,7 @@ RUN DEBIAN_FRONTEND=noninteractive LC_ALL=en_US.UTF-8 add-apt-repository ppa:ond
 
 # Update the package repository  and Install base packages
 RUN apt-get update && apt-get upgrade --yes && \
-	apt-get install --yes nano wget curl git 
+	apt-get install --yes nano wget curl git vim
 RUN apt-get update && apt-get upgrade --yes && \	
 	apt-get install --yes nginx mcrypt 
 RUN apt-get update && apt-get upgrade --yes && \
@@ -37,7 +37,8 @@ RUN apt-get update && apt-get upgrade --yes && \
  		php7.1-soap \
  		php7.1-xml \
  		php7.1-json \
- 		php7.1-zip 
+ 		php7.1-zip \
+		php-redis
 
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php && mv composer.phar /usr/local/bin/composer
@@ -90,6 +91,8 @@ RUN echo "\n"'PATH="$PATH:/root/.composer/vendor/bin"' >> /root/.profile
 RUN sed -ri 's/^;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g' /etc/php/7.1/fpm/php.ini && \ 
 	sed -i -e "s/upload_max_filesize\s*=\s*2M/upload_max_filesize = 100M/g" /etc/php/7.1/fpm/php.ini && \
 	sed -i -e "s/post_max_size\s*=\s*8M/post_max_size = 100M/g" /etc/php/7.1/fpm/php.ini && \
+	sed -i -e "s/memory_limit\s*=\s*128M/memory_limit = 12024/g" /etc/php/7.1/fpm/php.ini && \
+	sed -i -e "s/max_execution_time\s*=\s*30/max_execution_time = 3000/g" /etc/php/7.1/fpm/php.ini && \
 	sed -i -e "s/;daemonize\s*=\s*yes/daemonize = no/g" /etc/php/7.1/fpm/php-fpm.conf && \
 	sed -i -e "s/;catch_workers_output\s*=\s*yes/catch_workers_output = yes/g" /etc/php/7.1/fpm/pool.d/www.conf && \
 	sed -i -e "s/pm.max_children = 5/pm.max_children = 9/g" /etc/php/7.1/fpm/pool.d/www.conf && \
@@ -97,6 +100,7 @@ RUN sed -ri 's/^;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g' /etc/php/7.1/fpm/php.i
 	sed -i -e "s/pm.min_spare_servers = 1/pm.min_spare_servers = 2/g" /etc/php/7.1/fpm/pool.d/www.conf && \
 	sed -i -e "s/pm.max_spare_servers = 3/pm.max_spare_servers = 4/g" /etc/php/7.1/fpm/pool.d/www.conf && \
 	sed -i -e "s/pm.max_requests = 500/pm.max_requests = 200/g" /etc/php/7.1/fpm/pool.d/www.conf && \
+	sed -i -e "s/;request_terminate_timeout = 0/request_terminate_timeout = 3000/g" /etc/php/7.1/fpm/php-fpm.conf && \
 	sed -i -e 's/apache/mceith/g' /etc/php/7.1/fpm/pool.d/www.conf && \
 	sed -i '$a extension=oci8.so' /etc/php/7.1/fpm/php.ini 
 
@@ -105,21 +109,21 @@ RUN sed -i -e "s/;listen.mode = 0660/listen.mode = 0750/g" /etc/php/7.1/fpm/pool
 	find /etc/php/7.1/cli/conf.d/ -name "*.ini" -exec sed -i -re 's/^(\s*)#(.*)/\1;\2/g' {} \; && \
 	mkdir /run/php
 
+# Confugure cli php.ini 
+RUN sed -i '$a extension=oci8.so' /etc/php/7.1/cli/php.ini 
+
 # Nginx site conf
 COPY default /etc/nginx/sites-available/default
 
 ADD oci8.ini /etc/php/versionPHP/mods-available/
 
 # Set user deployer
-RUN useradd -g 0 -m deployer && echo "deployer:deployer" | chpasswd && adduser deployer sudo
+RUN useradd -g 33 -m deployer && echo "deployer:deployer" | chpasswd && adduser deployer sudo
 RUN echo "deployer ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-
-RUN chown deployer:www-data /var/www/html -R && \
-	chmod 775 /var/www/html -R
 
 USER deployer
 
-WORKDIR /var/www/html
+WORKDIR /home/deployer
 
 EXPOSE 80 443
 

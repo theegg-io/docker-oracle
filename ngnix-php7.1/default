@@ -2,7 +2,7 @@ server {
   listen   80; ## listen for ipv4; this line is default and implied
   listen   [::]:80 default ipv6only=on; ## listen for ipv6
 
-  root /var/www/html/public;
+  root /home/deployer/public;
   index index.php index.html index.htm;
 
   # Make site accessible from http://localhost/
@@ -28,7 +28,7 @@ server {
   #
   error_page 500 502 503 504 /50x.html;
   location = /50x.html {
-    root /vAR/WWw/HTMl;
+    root /home/deployer/public;
   }
 
   # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
@@ -37,6 +37,7 @@ server {
     try_files $uri =404;
     fastcgi_split_path_info ^(.+\.php)(/.+)$;
     fastcgi_pass unix:/var/run/php/php7.1-fpm.sock;
+    fastcgi_read_timeout 300;
     fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
     fastcgi_param SCRIPT_NAME $fastcgi_script_name;
     fastcgi_index index.php;
