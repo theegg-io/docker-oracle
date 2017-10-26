@@ -1,84 +1,72 @@
 server {
-  listen   80; ## listen for ipv4; this line is default and implied
-  listen   [::]:80 default ipv6only=on; ## listen for ipv6
+    listen 80;
+    server_name tracking.mailamericas.com;
 
-  charset utf-8;
+    gzip on;
+    gzip_disable "msie6";
+    gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript application/vnd.ms-fontobject application/x-font-ttf font/opentype image/svg+xml image/x-icon;
 
-  root /home/deployer/public;
-  index index.php index.html index.htm;
 
-  # Make site accessible from http://localhost/
-  #server_name localhost;
+    charset utf-8;
 
-  # Disable sendfile as per https://docs.vagrantup.com/v2/synced-folders/virtualbox.html
-  sendfile off;
-
-  # Add stdout logging
-
-  error_log /dev/stdout info;
-  access_log /dev/stdout;
-
-  location / {
-    # First attempt to serve request as file, then
-    # as directory, then fall back to index.html
-    try_files $uri $uri/ /index.php?query_string;
-  }
-
-  #error_page 404 /404.html;
-
-  # redirect server error pages to the static page /50x.html
-  #
-  error_page 500 502 503 504 /50x.html;
-  location = /50x.html {
     root /home/deployer/public;
-  }
 
-  # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
-  #
-  location ~ \.php$ {
-    try_files $uri =404;
-    fastcgi_split_path_info ^(.+\.php)(/.+)$;
-    fastcgi_pass unix:/var/run/php/php7.1-fpm.sock;
-    fastcgi_read_timeout 300;
-    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-    fastcgi_param SCRIPT_NAME $fastcgi_script_name;
-    fastcgi_index index.php;
-    include fastcgi_params;
-  }
+    access_log /home/deployer/storage/logs/access.log;
+    error_log  /home/deployer/storage/logs/error.log error;
+    error_page 404 /index.php;
+    sendfile off;
+    client_max_body_size 4G;
+    keepalive_timeout 10;
 
-  # No Access log and no not found log
-  location ~* \.(ogg|ogv|svgz|mp4|rss|atom|jpg|jpeg|gif|png|ico|zip|tgz|gz|rar|bz2|doc|xls|exe|ppt|tar|mid|midi|wav|bmp|rtf|txt)$ {
+    index index.html index.htm index.php;
+
+    location ^~ /assets/ {
+      gzip_static on;
       expires max;
-      log_not_found off;
-      access_log off;
       add_header Cache-Control public;
-      fastcgi_hide_header Set-Cookie;
-  }
+    }
 
-  # No Access Log but keep no found log
-  location ~* \.(css|js|htm|html)$ {
-      expires max;
-      log_not_found on;
-      access_log off;
-      add_header Cache-Control public;
-      fastcgi_hide_header Set-Cookie;
-  }
+    location ^~ /img/ {
+        gzip_static on;
+        expires max;
+        add_header Cache-Control public;
+    }
 
-  # Adds CORS
-  location ~* \.(eot|oft|svg|ttf|woff)$ {
-      add_header Access-Control-Allow-Origin *;
-      expires max;
-      log_not_found off;
-      access_log off;
-      add_header Cache-Control public;
-      fastcgi_hide_header Set-Cookie;
-  }
+    # Media: images, icons, video, audio, HTC
+    location ~* \.(?:jpg|jpeg|gif|png|ico|cur|gz|svg|svgz|mp4|ogg|ogv|webm|htc)$ {
+        gzip_static on;
+        expires max;
+        access_log off;
+        add_header Cache-Control "public";
+   }
 
-  # deny access to . files, for security
-  #
-  location ~ /\. {
-        log_not_found off;
+    # CSS and Javascript
+    location ~* \.(?:css|js)$ {
+        expires 1y;
+        access_log off;
+        add_header Cache-Control "public";
+    }
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    location ~ \.php$ {
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass unix:/var/run/php/php7.0-fpm.sock;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_intercept_errors on;
+        fastcgi_buffer_size 16k;
+        fastcgi_buffers 4 16k;
+    }
+
+    location ~ /\.ht {
         deny all;
-  }
+    }
 
 }
